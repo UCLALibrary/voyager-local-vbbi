@@ -585,7 +585,8 @@ create or replace package body vger_support.lws_vbbi as
   begin
     --YYMMDD from Z20; not Y2K compliant, campus A/P doesn't care, assumes century is '20'
     case
-      when p_invoice_date >= '130101' then rate := .0900;
+      when p_invoice_date >= '170101' then rate := .0875;
+      when p_invoice_date between '130101' and '161231' then rate := .0900;
       when p_invoice_date between '110701' and '121231' then rate := .0875;
       when p_invoice_date between '090701' and '110630' then rate := .0975;
       when p_invoice_date between '090401' and '090630' then rate := .0925;
