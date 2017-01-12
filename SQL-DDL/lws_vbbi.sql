@@ -244,7 +244,7 @@ create or replace package body vger_support.lws_vbbi as
       when p_voy_record.lib_tax_code = 'EX' or z21.line_code = 'FT' then -- no tax
         z21.sales_tax_code := 'E';
         z21.tax_rate_group_code := ' ';
-      when p_voy_record.description like '%Shipping _ Handling' then -- Shipping & Handling gets split 80/20
+      when p_voy_record.description like '%Shipping _ Handling' then -- Shipping and Handling gets split 80/20
         if z21.line_code = 'ESH' then -- Shipping portion (80%)
           z21.line_amount := z21.line_amount * 0.80;
           if p_voy_record.description like 'VR%' then -- tax to the vendor
@@ -860,7 +860,7 @@ create or replace package body vger_support.lws_vbbi as
   begin
     -- will throw NO_DATA_FOUND if invoice_id doesn't exist, which is good to know
     select distinct invoice_number into invoice_num from vger_support.vbbi_voy_invoice_data where invoice_id = p_invoice_id;
-    -- may throw NO_DATA_FOUND if no vbbi batch errors, which is possible & valid, so test count first
+    -- may throw NO_DATA_FOUND if no vbbi batch errors, which is possible and valid, so test count first
     select count(*) into cnt from vger_support.vbbi_batch_errors where invoice_number = invoice_num;
     if (cnt > 0) then
       -- z20d_required is Y or N; some invoices can have multiple errors, some requiring deletion
