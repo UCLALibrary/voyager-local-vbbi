@@ -772,7 +772,7 @@ create or replace package body vger_support.lws_vbbi as
     voy_invoice_total number := 0;
     total_difference number := 0;
     line_amount_total number := 0;
-    line_percent_total integer := 0;
+    line_percent_total number := 0;
     line_number integer := 1;
     z41_number integer := 1;
   begin
