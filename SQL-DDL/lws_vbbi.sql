@@ -221,6 +221,7 @@ create or replace package body vger_support.lws_vbbi as
     -- If negative, it's a CR (credit); otherwise, set it based on other info
     -- Credit or debit; 0 not allowed, filtered out by vbbi_voy_invoice_data view
     -- Limitation: negative amounts must be credits, which are incompatible with Shipping/Handling which must be ESH/TSH; see Footprints #24358
+	-- 2018-06-14 akohler: I may have miunderstood the CR vs. ESH/TSH problem years ago; see VBT-1092, I think I've fixed this...?
     if p_voy_record.amount < 0 then
       z21.line_code := 'CR';
     else
@@ -245,7 +246,7 @@ create or replace package body vger_support.lws_vbbi as
         z21.sales_tax_code := 'E';
         z21.tax_rate_group_code := ' ';
       when p_voy_record.description like '%Shipping _ Handling' then -- Shipping and Handling gets split 80/20
-        if z21.line_code = 'ESH' then -- Shipping portion (80%)
+        if z21.line_code = 'ESH' or (z21.line_code = 'CR' and p_line_code = 'ESH') then -- Shipping portion (80%)
           z21.line_amount := z21.line_amount * 0.80;
           if p_voy_record.description like 'VR%' then -- tax to the vendor
             z21.sales_tax_code := 'T';
@@ -659,6 +660,7 @@ create or replace package body vger_support.lws_vbbi as
       dbms_output.put_line(p_invoice_id || ' *** total(vendor) *** ' || round(vendor_invoice_total, 2));
       dbms_output.put_line(p_invoice_id || ' *** total paid *** ' || round(payment_total, 2));
       dbms_output.put_line(p_invoice_id || ' *** voy total paid *** ' || round(z20.voy_invoice_total, 2));
+      dbms_output.put_line(p_invoice_id || ' *** pac_invoice_total *** ' || round(z20.pac_invoice_total, 2));
     end if;
   end update_pac_record_totals;
   
