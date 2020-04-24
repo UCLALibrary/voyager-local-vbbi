@@ -1,10 +1,10 @@
 create or replace package vger_support.lws_vbbi as
   /*  A PAC invoice consist of:
       Z20 (1)
-      Z21 (0..N), each with 
+      Z21 (0..N), each with
         Z41 (0..N)
       Z25 (1)
-  */      
+  */
   type z20_record is record (
     transaction_number char(3) := 'Z20'
   , screen_number char(2) := '01'
@@ -41,7 +41,7 @@ create or replace package vger_support.lws_vbbi as
   , line_2 char(80)
   , line_3 char(80)
   );
-  
+
   type z25_record is record (
     transaction_number char(3) := 'Z25'
   , screen_number char(2) := '01'
@@ -53,7 +53,7 @@ create or replace package vger_support.lws_vbbi as
   , insufficient_funds char(1) := 'Y'
   , line_1 char(80)
   );
-  
+
   type z41_record is record (
     transaction_number char(3) := 'Z41'
   , screen_number char(2) := '01'
@@ -122,9 +122,9 @@ create or replace package vger_support.lws_vbbi as
   , z21 z21_collection
   , z25 z25_record
   );
-  
+
   subtype voyager_record is vger_support.vbbi_voy_invoice_data%rowtype;
-  
+
   function format_z20_line_1(p_z20 z20_record) return varchar2;
   function format_z20_line_1_for_delete(p_z20 z20_record) return varchar2;
   function format_z20_line_2(p_z20 z20_record) return varchar2;
@@ -239,9 +239,9 @@ create or replace package body vger_support.lws_vbbi as
           z21.line_code := 'DR'; -- might be taxable
       end case;
     end if;
-    
+
     -- Sales tax values; order of evaluation matters!
-    case 
+    case
       when p_voy_record.lib_tax_code = 'EX' or z21.line_code = 'FT' then -- no tax
         z21.sales_tax_code := 'E';
         z21.tax_rate_group_code := ' ';
@@ -269,7 +269,7 @@ create or replace package body vger_support.lws_vbbi as
         z21.sales_tax_code := 'T';
         z21.tax_rate_group_code := 'M';
       when upper(p_voy_record.description) like 'T% SPECIAL SALES TAX CODE' then -- special credit of tax to the state
-        z21.line_code := 'CR';        
+        z21.line_code := 'CR';
         z21.sales_tax_code := 'E';
         z21.tax_rate_group_code := ' ';
         z21.fau_location := '4';
@@ -357,7 +357,7 @@ create or replace package body vger_support.lws_vbbi as
         ||  lws_utility.get_blanks(38)
     );
   end format_z20_line_1_for_delete;
-  
+
   function format_z20_line_2(p_z20 z20_record) return varchar2 as
     card_number char(2) := '02';
   begin
@@ -477,7 +477,7 @@ create or replace package body vger_support.lws_vbbi as
         ||  lws_utility.get_blanks(31)
     );
   end format_z25;
-  
+
   function format_z41_line_1 (p_z41 z41_record) return varchar2 as
     card_number char(2) := '01';
   begin
@@ -541,8 +541,8 @@ create or replace package body vger_support.lws_vbbi as
     if p_voy_record.is_line_item = 'Y' then
       v_result := true;
     else
-      if v_description like '%SHIPPING%' 
-        or v_description like '%FREIGHT%' 
+      if v_description like '%SHIPPING%'
+        or v_description like '%FREIGHT%'
         or v_description like 'T% SPECIAL SALES TAX CODE'
         or v_description like '%DISCOUNT%'
         or v_description like '%PROCESSING CHARGE'
@@ -553,7 +553,7 @@ create or replace package body vger_support.lws_vbbi as
     end if;
     return v_result;
   end needs_line_item;
-  
+
   function is_taxable(p_z21 z21_record) return boolean as
     v_result boolean := false;
   begin
@@ -562,7 +562,7 @@ create or replace package body vger_support.lws_vbbi as
     end if;
     return v_result;
   end is_taxable;
-  
+
   function get_special_tax_fund(p_description varchar2) return char as
     v_fund_code char(6);
   begin
@@ -580,7 +580,7 @@ create or replace package body vger_support.lws_vbbi as
     end case;
     return v_fund_code;
   end;
-  
+
   function get_tax_rate(p_invoice_date varchar2) return number as
     rate number;
   begin
@@ -597,7 +597,7 @@ create or replace package body vger_support.lws_vbbi as
     end case;
     return rate;
   end get_tax_rate;
-  
+
   procedure update_pac_record_totals(p_invoice_id integer, p_voy_vendor_tax_amount number, p_pac_invoice in out pac_record, p_prod_mode boolean := TRUE) as
     line_amount number := 0;
     state_taxable_total number := 0;
@@ -624,7 +624,7 @@ create or replace package body vger_support.lws_vbbi as
         line_amount := z21.line_amount;
       end if;
       case z21.sales_tax_code
-        when 'S' then 
+        when 'S' then
           state_taxable_total := state_taxable_total + line_amount;
         -- We have no exceptions for vendor-taxable amounts
         when 'T' then vendor_taxable_total := vendor_taxable_total + line_amount;
@@ -640,7 +640,7 @@ create or replace package body vger_support.lws_vbbi as
       z20.invoice_type := 'D';
     else
       z20.invoice_type := 'C';
-    end if;      
+    end if;
     z20.invoice_total_amount := vendor_invoice_total;
     z20.sales_tax_amount := vendor_tax_amount;
     z20.discount_amount := discount_total;
@@ -663,12 +663,12 @@ create or replace package body vger_support.lws_vbbi as
       dbms_output.put_line(p_invoice_id || ' *** pac_invoice_total *** ' || round(z20.pac_invoice_total, 2));
     end if;
   end update_pac_record_totals;
-  
+
   procedure store_log_record(p_invoice_id integer, p_message varchar2, p_amount number) as
   begin
     insert into vger_support.vbbi_log_data values (p_invoice_id, p_message, p_amount);
   end store_log_record;
-  
+
   procedure store_pac_record(p_invoice_id integer, p_pac_invoice pac_record) as
     z21 z21_record;
     seq integer := 1;
@@ -704,7 +704,7 @@ create or replace package body vger_support.lws_vbbi as
   begin
     insert into vger_support.vbbi_pac_invoice_data (invoice_id, seq, line) values (p_invoice_id, seq, p_z20_record.line_1);
   end store_z20_delete_record;
-  
+
   procedure update_z21(p_z21 in out z21_record, p_line_amount number) as
   begin
     p_z21.line_amount := abs(p_line_amount);
@@ -720,7 +720,7 @@ create or replace package body vger_support.lws_vbbi as
     p_z21.line_2 := format_z21_line_2(p_z21);
     p_z21.line_3 := format_z21_line_3(p_z21);
   end update_z21;
-  
+
   procedure build_delete_invoices as
     cursor c_del_invoices is
       select invoice_id
@@ -738,7 +738,7 @@ create or replace package body vger_support.lws_vbbi as
     end loop;
     close c_del_invoices;
   end build_delete_invoices;
-  
+
   procedure build_vbbi_file as
     cursor c_invoices is
       select distinct invoice_id
@@ -757,7 +757,7 @@ create or replace package body vger_support.lws_vbbi as
       build_invoice_data(invoice_id);
     end loop;
     close c_invoices;
-  end build_vbbi_file; 
+  end build_vbbi_file;
 
   procedure build_invoice_data(p_invoice_id integer, p_prod_mode boolean := TRUE) as
     cursor c_voyager is
@@ -765,7 +765,7 @@ create or replace package body vger_support.lws_vbbi as
       from vger_support.vbbi_voy_invoice_data
       where invoice_id = p_invoice_id
       order by invoice_id, inv_line_item_id
-    ;  
+    ;
     voy_record voyager_record;
     pac_invoice pac_record;
     voy_vendor_tax_amount number := 0;
@@ -782,7 +782,7 @@ create or replace package body vger_support.lws_vbbi as
     loop
       fetch c_voyager into voy_record;
       exit when c_voyager%notfound;
-      
+
       if needs_line_item(voy_record) then
         if pac_invoice.z21.exists(line_number) = false then
           if voy_record.description like '%Shipping _ Handling' then -- VR or regular
@@ -793,7 +793,7 @@ create or replace package body vger_support.lws_vbbi as
             pac_invoice.z21(line_number) := build_z21(voy_record, line_number);
           end if;
         end if;
-  
+
         if voy_record.percentage >= 100 then
           line_number := line_number + 1;
         else
@@ -801,7 +801,8 @@ create or replace package body vger_support.lws_vbbi as
           z41_number := z41_number + 1;
           line_amount_total := line_amount_total + voy_record.amount;
           line_percent_total := line_percent_total + voy_record.percentage;
-          if line_percent_total = 100 then
+          -- Some Voyager percentage splits can't total exactly 100%; allow a tiny bit of leeway
+          if abs(line_percent_total - 100) <= 0.000005 then
             update_z21(pac_invoice.z21(line_number), line_amount_total);
             line_amount_total := 0;
             line_percent_total := 0;
@@ -814,7 +815,7 @@ create or replace package body vger_support.lws_vbbi as
       if voy_record.description = 'VR vendor sales tax code' or voy_record.description like '%special sales tax code' then
         voy_vendor_tax_amount := voy_vendor_tax_amount + voy_record.amount;
       end if;
-      
+
     end loop;
     pac_invoice.z20 := build_z20(voy_record);
     pac_invoice.z25 := build_z25(voy_record);
@@ -856,7 +857,7 @@ create or replace package body vger_support.lws_vbbi as
       end if;
     end if;
   end build_invoice_data;
-  
+
   procedure reset_invoice(p_invoice_id integer) as
     invoice_num vger_support.vbbi_voy_invoice_data.invoice_number%type;
     z20d_required vger_support.vbbi_batch_errors.z20d_required%type;
@@ -888,7 +889,7 @@ create or replace package body vger_support.lws_vbbi as
         raise;
     -- end of exception block
   end reset_invoice;
-  
+
 end lws_vbbi;
 /
 
